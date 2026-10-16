@@ -1,0 +1,47 @@
+name: Build WebReader 64-Bit Android APK
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Auto-Unzip WebReader Zip File
+        run: |
+          for z in *.zip; do
+            if [ -f "$z" ]; then
+              unzip -o "$z"
+            fi
+          done
+          if [ ! -f "settings.gradle.kts" ]; then
+            subdir=$(find . -maxdepth 2 -name "settings.gradle.kts" | head -n 1 | xargs dirname)
+            if [ -n "$subdir" ] && [ "$subdir" != "." ]; then
+              cp -r "$subdir"/* .
+            fi
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Gradle 8.7
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+
+      - name: Build 64-Bit APK
+        run: gradle assembleDebug
+
+      - name: Upload Installable WebReader APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: WebReader-64bit-Installable-APK
+          path: app/build/outputs/apk/debug/*.apk
+          
